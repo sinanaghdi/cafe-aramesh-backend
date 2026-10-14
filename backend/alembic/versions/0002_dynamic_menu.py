@@ -28,7 +28,6 @@ def upgrade() -> None:
         sa.Column("is_active", sa.Boolean(), server_default=sa.true(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.UniqueConstraint("slug", name="uq_cafes_slug"),
     )
     op.create_index("ix_cafes_id", "cafes", ["id"])
     op.create_index("ix_cafes_slug", "cafes", ["slug"], unique=True)
