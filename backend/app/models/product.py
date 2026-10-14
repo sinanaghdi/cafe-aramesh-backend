@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, CheckConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.app.db.base import Base
@@ -9,7 +9,10 @@ from backend.app.db.base import Base
 
 class Product(Base):
     __tablename__ = "products"
-    __table_args__ = (UniqueConstraint("category_id", "slug", name="uq_products_category_slug"),)
+    __table_args__ = (
+        UniqueConstraint("category_id", "slug", name="uq_products_category_slug"),
+        CheckConstraint("price >= 0", name="ck_products_price_nonnegative"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"), index=True, nullable=False)
