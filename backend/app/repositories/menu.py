@@ -15,24 +15,9 @@ def get_active_cafe_menu(db: Session, cafe_id: int) -> Cafe | None:
     statement = (
         select(Cafe)
         .where(Cafe.id == cafe_id, Cafe.is_active.is_(True))
-        .options(
-            selectinload(Cafe.categories).selectinload(Category.products)
-        )
+        .options(selectinload(Cafe.categories).selectinload(Category.products))
     )
-    cafe = db.scalar(statement)
-    if cafe is None:
-        return None
-
-    cafe.categories[:] = sorted(
-        (category for category in cafe.categories if category.is_active),
-        key=lambda category: (category.sort_order, category.id),
-    )
-    for category in cafe.categories:
-        category.products[:] = sorted(
-            (product for product in category.products if product.is_available),
-            key=lambda product: (product.sort_order, product.id),
-        )
-    return cafe
+    return db.scalar(statement)
 
 
 def list_active_categories(db: Session, cafe_id: int) -> list[Category]:
