@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from backend.app.core.order_config import WAITER_PIN
 from backend.app.db.session import get_db
@@ -88,7 +88,7 @@ def post_order(data: OrderIn, db: Session = Depends(get_db)):
 @router.get("/orders/{order_id}")
 def get_order(order_id: int, db: Session = Depends(get_db)):
     order = db.scalar(select(Order).options(
-        joinedload(Order.table), joinedload(Order.items).joinedload(OrderItem.product)
+        joinedload(Order.table), selectinload(Order.items).joinedload(OrderItem.product)
     ).where(Order.id == order_id))
     if order is None:
         raise HTTPException(status_code=404, detail="not_found")
@@ -113,8 +113,8 @@ def waiter_login(data: LoginIn):
 @router.get("/waiter/orders")
 def waiter_orders(db: Session = Depends(get_db)):
     items = db.scalars(select(Order).options(
-        joinedload(Order.table), joinedload(Order.items).joinedload(OrderItem.product)
-    ).order_by(Order.created_at.desc(), Order.id.desc())).unique().all()
+        joinedload(Order.table), selectinload(Order.items).joinedload(OrderItem.product)
+    ).order_by(Order.created_at.desc(), Order.id.desc())).all()
     return [serialize(item) for item in items]
 
 
