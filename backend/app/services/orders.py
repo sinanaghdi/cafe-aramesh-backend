@@ -16,6 +16,13 @@ def _now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _is_expired(value: datetime) -> bool:
+    # SQLite drops timezone info on round-trip; normalize before Python comparisons.
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value <= _now()
+
+
 def serialize(order: Order) -> dict:
     return {
         "id": order.id,
@@ -84,7 +91,6 @@ def create_order(db: Session, data):
     db.add(order)
     db.flush()
 
-    # Avoid accidentally issuing the same live code for two pending orders.
     live_codes = set(db.scalars(select(ConfirmationCode.code).where(
         ConfirmationCode.used_at.is_(None),
         ConfirmationCode.expires_at > _now(),
@@ -103,7 +109,6 @@ def create_order(db: Session, data):
         expires_at=_now() + timedelta(minutes=CONFIRMATION_TTL_MINUTES),
     ))
     db.commit()
-    db.refresh(order)
     return db.scalar(_order_query().where(Order.id == order.id)), code
 
 
@@ -115,7 +120,7 @@ def verify(db: Session, code: str):
     )
     if confirmation is None:
         raise HTTPException(status_code=404, detail="invalid_code")
-    if confirmation.expires_at <= _now():
+    if _is_expired(confirmation.expires_at):
         raise HTTPException(status_code=410, detail="expired")
     order = db.scalar(_order_query().where(Order.id == confirmation.order_id))
     if order is None:
@@ -136,7 +141,7 @@ def approve(db: Session, order_id: int):
         .where(ConfirmationCode.order_id == order_id, ConfirmationCode.used_at.is_(None))
         .order_by(ConfirmationCode.created_at.desc())
     )
-    if confirmation is None or confirmation.expires_at <= _now():
+    if confirmation is None or _is_expired(confirmation.expires_at):
         raise HTTPException(status_code=410, detail="expired")
     confirmation.used_at = _now()
     order.status = "CONFIRMED"
