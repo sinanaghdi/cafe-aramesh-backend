@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from backend.app.api.router import api_router
+from backend.app.api.routes.legacy import router as legacy_router
 from backend.app.core.config import settings
 
 app = FastAPI(
@@ -10,7 +11,11 @@ app = FastAPI(
     redoc_url="/redoc" if settings.debug else None,
     openapi_url="/openapi.json" if settings.debug else None,
 )
+
+# Versioned API for new clients.
 app.include_router(api_router, prefix="/api/v1")
+# Compatibility routes expected by the existing Cafe Aramesh frontend.
+app.include_router(legacy_router, prefix="/api")
 
 
 @app.get("/", tags=["Root"])
