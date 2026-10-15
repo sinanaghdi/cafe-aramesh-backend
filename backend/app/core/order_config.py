@@ -1,4 +1,4 @@
-import os
+from backend.app.core.config import settings
 
-WAITER_PIN = os.getenv("WAITER_PIN", "")
-CONFIRMATION_TTL_MINUTES = int(os.getenv("CONFIRMATION_TTL_MINUTES", "15"))
+WAITER_PIN = settings.waiter_pin
+CONFIRMATION_TTL_MINUTES = max(1, settings.confirmation_ttl_minutes)
