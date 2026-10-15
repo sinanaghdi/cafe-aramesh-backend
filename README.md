@@ -1,6 +1,6 @@
 # Cafe Aramesh Backend
 
-A clean FastAPI and PostgreSQL backend foundation for the Cafe Aramesh smart menu.
+A FastAPI and PostgreSQL backend for the Cafe Aramesh smart menu.
 
 ## Stack
 
@@ -14,7 +14,7 @@ A clean FastAPI and PostgreSQL backend foundation for the Cafe Aramesh smart men
 
 ## Current phase
 
-**Phase 1 — Backend foundation:** application configuration, database session management, health endpoints, Alembic configuration, and starter tests. Domain features will be added in small, testable phases.
+**Phase 2 — Dynamic menu read API:** SQLAlchemy models and a database migration for cafes, categories, and products, plus read-only endpoints for public cafe/menu data. No real cafe data is seeded automatically; an empty database returns an empty product/category list for an existing cafe, and a 404 for a missing/inactive cafe.
 
 ## Setup (Windows)
 
@@ -23,7 +23,7 @@ A clean FastAPI and PostgreSQL backend foundation for the Cafe Aramesh smart men
 
    ```powershell
    py -3.11 -m venv .venv
-   .venv\\Scripts\\activate
+   .venv\Scripts\activate
    python -m pip install --upgrade pip
    pip install -r requirements.txt
    ```
@@ -44,28 +44,44 @@ A clean FastAPI and PostgreSQL backend foundation for the Cafe Aramesh smart men
 
 7. Open `http://127.0.0.1:8000/docs`. Liveness: `/api/v1/health/live`; database readiness: `/api/v1/health/ready`.
 
+## Dynamic menu endpoints
+
+All routes use the `/api/v1` prefix.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/cafes/{cafe_id}` | Public cafe details |
+| GET | `/cafes/{cafe_id}/menu` | Cafe details plus active categories and available products |
+| GET | `/categories/?cafe_id={cafe_id}` | Active categories for one cafe |
+| GET | `/products/` | Available products across active categories |
+| GET | `/products/?category_id={category_id}` | Available products in one category |
+
+Example menu request: `GET /api/v1/cafes/1/menu`.
+
+Only active cafes/categories and available products appear in public menu responses. Prices are integer toman amounts. These endpoints are read-only; protected management endpoints will be added after authentication and authorization are designed.
+
 ## Tests
 
 Run from the repository root:
 
 ```powershell
-pytest backend/tests
+python -m pytest backend/tests -q
 ```
 
-The liveness test does not require PostgreSQL. The readiness test accepts either a successful connection or a clear `503` response when PostgreSQL is not running.
+Menu tests use an isolated in-memory SQLite database and do not require PostgreSQL. The readiness test accepts either a successful database connection or a clear `503` response when PostgreSQL is not running.
 
 ## Development rules
 
 - Keep credentials and API keys out of source control.
 - Make schema changes through Alembic migrations; do not use `Base.metadata.create_all()` during application startup.
 - Validate API input/output with Pydantic schemas.
-- Keep routing, business logic, and database access separated as features grow.
-- Each feature should include tests before frontend integration.
+- Keep routing, business logic, and database access separated.
+- Include tests for each feature before frontend integration.
 
-## Planned feature order
+## Feature roadmap
 
 1. Foundation, configuration, database session, and migrations.
-2. Cafe profile, categories, and dynamic menu/products.
+2. Cafe profile, categories, and dynamic menu/products. **In progress on this branch.**
 3. Customer cart validation and order creation.
 4. Order confirmation code and waiter approval.
 5. Order status and waiter/admin access control.
